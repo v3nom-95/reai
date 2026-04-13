@@ -1,0 +1,690 @@
+================================================================================
+                  BLOCKCHAIN FUNCTIONALITY VERIFICATION GUIDE
+                          REAI Medical Assistant
+================================================================================
+
+This guide explains how to verify and test the blockchain functionality in the
+REAI (Responsible AI Medical Assistant) system. Follow these steps to ensure
+the blockchain is working correctly and all data is being properly recorded.
+
+
+================================================================================
+                            SECTION 1: BASIC VERIFICATION
+================================================================================
+
+1.1 START THE APPLICATION
+================================================================================
+
+First, start the Flask application:
+
+    python app.py
+
+You should see output similar to:
+
+    Using provided account address: XXK264WAX6D5LOU5OUSNCO5MDEH6RKQNRENHGGHDS43Q2STN2DYFEFWDGY
+    Ensure this address is funded on testnet.
+     * Running on http://127.0.0.1:5000
+
+The application is now running and blockchain recording is enabled.
+
+
+1.2 CHECK INITIAL BLOCKCHAIN STATE
+================================================================================
+
+Open a new terminal and check the initial blockchain state:
+
+    curl http://localhost:5000/model-info | jq
+
+Expected response:
+
+    {
+      "model": {
+        "name": "custom-medical-llm-v1",
+        "version": 1,
+        "model_hash": "abc123...",
+        "vocab_size": 0,
+        "embedding_dim": 128,
+        "training_steps": 0,
+        "blockchain_records": 0
+      },
+      "blockchain": {
+        "chain_length": 1,
+        "total_records": 0,
+        "pending_records": 0,
+        "is_valid": true,
+        "latest_block_hash": "00xyz789..."
+      },
+      "blockchain_chain_length": 1
+  }
+
+KEY OBSERVATIONS:
+- chain_length: 1 (genesis block only)
+- total_records: 0 (no transactions yet)
+- is_valid: true (blockchain integrity is good)
+
+
+================================================================================
+                            SECTION 2: TESTING LOCAL BLOCKCHAIN
+================================================================================
+
+2.1 SEND A CHAT MESSAGE
+================================================================================
+
+Send a health-related query to trigger blockchain recording:
+
+    curl -X POST http://localhost:5000/chat \
+      -H "Content-Type: application/json" \
+      -d '{"message": "I have a fever"}'
+
+Expected response:
+
+    {
+      "response": "For fever, rest in bed, stay hydrated...",
+      "txid": "Algorand transaction ID (e.g., 5V3...",
+      "hash": "sha256hash...",
+      "model_info": {
+        "name": "custom-medical-llm-v1",
+        "version": 1,
+        "model_hash": "def456...",
+        "vocab_size": 5,
+        "training_steps": 1,
+        "blockchain_records": 2
+      },
+      "blockchain_stats": {
+        "chain_length": 3,
+        "total_records": 2,
+        "pending_records": 0,
+        "is_valid": true,
+        "latest_block_hash": "00abc123..."
+      }
+    }
+
+VERIFICATION POINTS:
+- model_info.vocab_size increased (new words learned)
+- model_info.training_steps increased (training occurred)
+- blockchain_stats.chain_length increased (new blocks mined)
+- blockchain_stats.total_records > 0 (data recorded)
+
+
+2.2 CHECK MODEL INFO AGAIN
+================================================================================
+
+    curl http://localhost:5000/model-info | jq
+
+Compare with initial state:
+- training_steps should be 1 or more
+- vocab_size should reflect words learned
+- blockchain_records should show all recorded events
+
+
+2.3 VIEW BLOCKCHAIN HISTORY
+================================================================================
+
+    curl http://localhost:5000/blockchain-history | jq
+
+Expected output shows all blockchain records:
+
+    {
+      "total_records": 5,
+      "records": [
+        {
+          "block_index": 1,
+          "block_hash": "00abc123...",
+          "block_timestamp": "2024-01-01T12:00:00",
+          "type": "model_training_batch",
+          "data": {
+            "model_name": "custom-medical-llm-v1",
+            "model_version": 1,
+            "batch_metrics": {
+              "batch_size": 1,
+              "vocab_before": 0,
+              "vocab_after": 5,
+              "new_words": 5,
+              "model_hash_before": "abc123...",
+              "model_hash_after": "def456..."
+            }
+          }
+        },
+        {
+          "block_index": 2,
+          "block_hash": "00def456...",
+          "type": "query_inference",
+          "data": {
+            "query": "I have a fever",
+            "best_match_idx": null,
+            "similarity_score": null,
+            "model_used": "custom-llm"
+          }
+        }
+      ]
+    }
+
+
+================================================================================
+                        SECTION 3: VERIFY BLOCKCHAIN INTEGRITY
+================================================================================
+
+3.1 CHECK CHAIN VALIDITY
+================================================================================
+
+The local blockchain automatically verifies integrity. Check via API:
+
+    curl http://localhost:5000/model-info | jq '.blockchain.is_valid'
+
+Expected result: true
+
+To manually verify in Python:
+
+    from blockchain import blockchain
+    is_valid = blockchain.verify_integrity()
+    print(f"Blockchain valid: {is_valid}")
+
+Expected output: Blockchain valid: True
+
+
+3.2 VIEW COMPLETE CHAIN
+================================================================================
+
+    from blockchain import blockchain
+    chain = blockchain.get_chain()
+    print(f"Chain length: {len(chain)}")
+    
+    for i, block in enumerate(chain):
+        print(f"\nBlock {i}:")
+        print(f"  Hash: {block['hash']}")
+        print(f"  Previous: {block['previous_hash']}")
+        print(f"  Records: {len(block['records'])}")
+        print(f"  Nonce: {block['nonce']}")
+
+Each block should have:
+- Valid hash (starts with "00" for difficulty=2)
+- Correct previous_hash reference
+- Incrementing index
+- Increasing timestamps
+
+
+3.3 CHECK HASH CHAIN INTEGRITY
+================================================================================
+
+Each block's previous_hash should match the previous block's hash:
+
+    chain = blockchain.get_chain()
+    for i in range(1, len(chain)):
+        if chain[i]['previous_hash'] != chain[i-1]['hash']:
+            print(f"ERROR: Block {i} has invalid previous_hash!")
+        else:
+            print(f"Block {i} integrity: OK")
+
+
+================================================================================
+                    SECTION 4: TEST DECENTRALIZED ML WORKFLOW
+================================================================================
+
+The decentralized ML feature requires consensus before applying training.
+
+4.1 PROPOSE TRAINING
+================================================================================
+
+    curl -X POST http://localhost:5000/decentralized/propose-training \
+      -H "Content-Type: application/json" \
+      -d '{
+        "texts": ["I have a headache", "My head hurts"],
+        "learning_rate": 0.01
+      }'
+
+Expected response:
+
+    {
+      "status": "success",
+      "proposal": {
+        "status": "proposed",
+        "proposal_hash": "a1b2c3d4",
+        "message": "Training proposed to blockchain validators"
+      },
+      "blockchain_stats": {
+        "chain_length": 4,
+        "total_records": 3,
+        "pending_records": 0
+      }
+    }
+
+KEY: Note the proposal_hash (e.g., "a1b2c3d4")
+
+
+4.2 CHECK PENDING PROPOSALS
+================================================================================
+
+Before approval, check the status:
+
+    curl http://localhost:5000/decentralized/status | jq
+
+Look for:
+- total_proposals: should be 1 or more
+- total_approvals: should be 0 (not yet approved)
+- applied_updates: should be less than proposals
+
+
+4.3 APPROVE PROPOSAL (SIMULATED VALIDATOR)
+================================================================================
+
+    curl -X POST http://localhost:5000/decentralized/approve-proposal \
+      -H "Content-Type: application/json" \
+      -d '{
+        "proposal_hash": "a1b2c3d4",
+        "validator_id": "validator-alice"
+      }'
+
+Expected response:
+
+    {
+      "status": "success",
+      "approval": {
+        "status": "approved",
+        "proposal_hash": "a1b2c3d4",
+        "validator": "validator-alice"
+      },
+      "blockchain_stats": {
+        "chain_length": 5,
+        "total_records": 4
+      }
+    }
+
+
+4.4 APPLY APPROVED TRAINING
+================================================================================
+
+    curl -X POST http://localhost:5000/decentralized/apply-training \
+      -H "Content-Type: application/json" \
+      -d '{
+        "proposal_hash": "a1b2c3d4",
+        "texts": ["I have a headache", "My head hurts"],
+        "learning_rate": 0.01
+      }'
+
+Expected response:
+
+    {
+      "status": "success",
+      "metrics": {
+        "batch_size": 2,
+        "vocab_before": 5,
+        "vocab_after": 9,
+        "new_words": 4,
+        "model_hash_before": "def456...",
+        "model_hash_after": "ghi789...",
+        "proposal_hash": "a1b2c3d4",
+        "consensus_required": true
+      },
+      "model_info": {
+        "name": "custom-medical-llm-v1",
+        "training_steps": 3,
+        "vocab_size": 9
+      },
+      "blockchain_stats": {
+        "chain_length": 6,
+        "total_records": 5
+      }
+    }
+
+VERIFICATION:
+- metrics.vocab_before should match previous state
+- metrics.vocab_after should show new words learned
+- metrics.consensus_required should be true
+- training_steps should increase
+
+
+4.5 VERIFY CONSENSUS STATUS
+================================================================================
+
+    curl http://localhost:5000/decentralized/status | jq
+
+Expected:
+
+    {
+      "blockchain": {
+        "chain_length": 6,
+        "total_records": 5,
+        "is_valid": true
+      },
+      "model": {
+        "name": "custom-medical-llm-v1",
+        "training_steps": 3,
+        "vocab_size": 9
+      },
+      "decentralized_stats": {
+        "total_proposals": 2,
+        "total_approvals": 2,
+        "applied_updates": 2,
+        "pending_records": 0
+      },
+      "consensus_required": true,
+      "validators_required": 1
+    }
+
+Check that:
+- total_proposals = total_approvals = applied_updates
+- pending_records = 0
+- is_valid = true
+
+
+================================================================================
+                    SECTION 5: TEST MODEL CHECKPOINTS
+================================================================================
+
+5.1 SAVE CHECKPOINT
+================================================================================
+
+    curl -X POST http://localhost:5000/save-checkpoint
+
+Expected response:
+
+    {
+      "status": "success",
+      "checkpoint_hash": "abc123",
+      "block": {
+        "status": "success",
+        "success": true,
+        "block_index": 7,
+        "block_hash": "00checkpoint...",
+        "nonce": 15
+      },
+      "model_info": {
+        "name": "custom-medical-llm-v1",
+        "training_steps": 3,
+        "vocab_size": 9
+      }
+    }
+
+The checkpoint is saved to: checkpoints/model_checkpoint.json
+
+
+5.2 VERIFY CHECKPOINT RECORD
+================================================================================
+
+Check blockchain history for checkpoint record:
+
+    curl http://localhost:5000/blockchain-history | jq '.records[] | select(.type=="model_checkpoint")'
+
+
+================================================================================
+                    SECTION 6: RUN AUTOMATED TESTS
+================================================================================
+
+6.1 RUN BLOCKCHAIN MODEL TESTS
+================================================================================
+
+    python test_blockchain_model.py
+
+This test suite verifies:
+✓ Custom LLM training
+✓ Blockchain block mining
+✓ Model checkpointing
+✓ Blockchain integrity
+✓ Training history generation
+
+Expected output:
+
+    Running blockchain model tests...
+    ✓ Model initialized
+    ✓ Training batch completed
+    ✓ Block mined successfully
+    ✓ Checkpoint saved
+    ✓ Blockchain integrity verified
+    All tests passed!
+
+
+6.2 RUN DECENTRALIZED ML DEMO
+================================================================================
+
+    python demo_decentralized_ml.py
+
+This demo shows the complete consensus workflow:
+- Propose training for fever queries
+- Validator approval
+- Apply consensus training
+- Repeat for throat and chest pain queries
+- Final verification
+
+Expected output:
+
+    =====================================================================
+    DECENTRALIZED ML TRAINING VIA BLOCKCHAIN CONSENSUS
+    =====================================================================
+    
+    [BATCH 1] Training: Fever-related queries
+    --------------------------------------------------
+    Step 1: PROPOSE training on fever queries to validators...
+      ✓ Proposal hash: a1b2c3d4e5f6
+      ✓ Status: Training proposed to blockchain validators
+    
+    Step 2: VALIDATOR APPROVAL (validator-alice approves)
+      ✓ Validator: validator-alice
+      ✓ Approval status: approved
+    
+    Step 3: APPLY consensus-approved training...
+      ✓ Model hash: abc456xyz
+      ✓ Vocab size: 165
+      ✓ New words learned: 15
+      ✓ Total training steps: 1
+      ✓ Blockchain records: 4
+    
+    [BATCH 2] Training: Throat-related queries
+    ...
+    
+    =====================================================================
+    ✓ DECENTRALIZED ML TRAINING COMPLETE!
+    =====================================================================
+
+
+================================================================================
+                    SECTION 7: VERIFY ALGORAND INTEGRATION
+================================================================================
+
+7.1 CHECK ALGORAND TRANSACTIONS
+================================================================================
+
+When you send a chat message, check the txid returned:
+
+    curl -X POST http://localhost:5000/chat \
+      -H "Content-Type: application/json" \
+      -d '{"message": "I have anxiety"}'
+
+Look for txid in response:
+
+    {
+      "response": "For anxiety or stress...",
+      "txid": "5V3MER7L2MHGK7D5R7Z4IAJ72K7T2...",
+      ...
+    }
+
+You can view this transaction on Algorand Testnet Explorer:
+https://testnet.algoexplorer.io/tx/5V3MER7L2MHGK7D5R7Z4IAJ72K7T2...
+
+
+7.2 VERIFY ON-CHAIN DATA (OPTIONAL)
+================================================================================
+
+The system stores query/response pairs in Algorand transaction notes.
+To verify manually:
+
+1. Go to https://testnet.algoexplorer.io
+2. Search for the address: XXK264WAX6D5LOU5OUSNCO5MDEH6RKQNRENHGGHDS43Q2STN2DYFEFWDGY
+3. View recent transactions
+4. Check transaction notes for stored medical queries
+
+
+================================================================================
+                    SECTION 8: TROUBLESHOOTING
+================================================================================
+
+8.1 BLOCKCHAIN NOT MINING
+================================================================================
+Problem: Pending records not being mined
+Solution:
+- Check if mine_block() is being called
+- Verify blockchain.mine_block() returns success
+- Check block hash starts with "00" (difficulty=2)
+
+Debug:
+
+    from blockchain import blockchain
+    result = blockchain.mine_block()
+    print(result)
+    # Should show: {'status': 'success', 'success': True, ...}
+
+
+8.2 MODEL NOT TRAINING
+================================================================================
+Problem: training_steps not increasing
+Solution:
+- Verify USE_CUSTOM_LLM = True in model.py
+- Check train_model_on_batch() is called
+- Look for errors in server logs
+
+Debug:
+
+    from model import train_model_on_batch, get_model_info
+    metrics = train_model_on_batch(["test query"], learning_rate=0.01)
+    print(metrics)
+    print(get_model_info())
+
+
+8.3 DECENTRALIZED WORKFLOW FAILING
+================================================================================
+Problem: apply_training returns "Not approved by validators"
+Solution:
+- Ensure approve_proposal was called with correct proposal_hash
+- Check blockchain.validate_model_update(proposal_hash)
+- Verify validator approval record exists
+
+Debug:
+
+    from blockchain import blockchain
+    is_valid = blockchain.validate_model_update("a1b2c3d4")
+    print(f"Proposal approved: {is_valid}")
+    
+    # Check all approvals
+    chain = blockchain.get_chain()
+    for block in chain:
+        for record in block.get('records', []):
+            if record['type'] == 'validator_approval':
+                print(f"Found approval: {record['data']}")
+
+
+8.4 BLOCKCHAIN INVALID
+================================================================================
+Problem: is_valid returns false
+Solution:
+- Check if chain was modified
+- Verify all previous_hash references
+- Recompute hashes to find corruption
+
+Debug:
+
+    from blockchain import blockchain
+    chain = blockchain.get_chain()
+    
+    for i in range(1, len(chain)):
+        current = chain[i]
+        previous = chain[i-1]
+        computed = blockchain._compute_hash(current)
+        
+        if current['hash'] != computed:
+            print(f"Block {i} hash mismatch!")
+        if current['previous_hash'] != previous['hash']:
+            print(f"Block {i} previous_hash mismatch!")
+
+
+================================================================================
+                    SECTION 9: MONITORING COMMANDS
+================================================================================
+
+9.1 WATCH BLOCKCHAIN GROW
+================================================================================
+
+    watch -n 2 'curl -s http://localhost:5000/model-info | jq'
+
+This updates every 2 seconds showing:
+- Chain length increasing
+- Training steps accumulating
+- Records being added
+
+
+9.2 TRACK PROPOSALS
+================================================================================
+
+    curl -s http://localhost:5000/blockchain-history | jq \
+      '.records[] | select(.type=="training_proposal")'
+
+
+9.3 GET MODEL STATE PER BLOCK
+================================================================================
+
+    curl -s http://localhost:5000/model-info | jq '.model'
+
+
+9.4 CHECK ALL BLOCKCHAIN STATS
+================================================================================
+
+    curl -s http://localhost:5000/decentralized/status | jq
+
+
+================================================================================
+                    SECTION 10: EXPECTED VALUES REFERENCE
+================================================================================
+
+Initial State (Fresh Start):
+- chain_length: 1 (genesis block)
+- total_records: 0
+- training_steps: 0
+- vocab_size: 0
+
+After 1 Chat Message:
+- chain_length: 3 (genesis + training + inference)
+- total_records: 2+
+- training_steps: 1
+- vocab_size: 5-10 (depends on query)
+
+After Decentralized Training (1 batch):
+- total_proposals: 1
+- total_approvals: 1
+- applied_updates: 1
+- training_steps: 2+
+- vocab_size: 10-20
+
+After 3 Demo Batches:
+- chain_length: 10+
+- total_records: 15+
+- training_steps: 4+
+- vocab_size: 50+
+
+
+================================================================================
+                    QUICK VERIFICATION CHECKLIST
+================================================================================
+
+□ Application starts without errors
+□ Model info shows chain_length = 1 initially
+□ Chat message increases training_steps
+□ Chat message increases chain_length
+□ Blockchain history shows records
+□ Decentralized propose returns proposal_hash
+□ Decentralized approve returns approval status
+□ Decentralized apply increases vocab_size
+□ Decentralized status shows balanced counts
+□ verify_integrity() returns true
+□ Test suite passes
+□ Demo script completes successfully
+
+
+================================================================================
+                            END OF VERIFICATION GUIDE
+================================================================================
+
+For more details, see:
+- PROJECT_DOCUMENTATION.txt - Complete project documentation
+- README.md - Getting started guide
+- DECENTRALIZED_ML.md - Decentralized ML details
+
+================================================================================
+

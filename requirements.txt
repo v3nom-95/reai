@@ -1,0 +1,5 @@
+flask
+py-algorand-sdk
+sentence-transformers
+torch
+numpy

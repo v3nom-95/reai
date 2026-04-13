@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Responsible AI Chat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Responsible Medical Assistant AI</h1>
+        <p>This AI provides general health information as a helpful assistant. <strong>Important:</strong> This is not a substitute for professional medical advice. Always consult a qualified healthcare provider for personal health concerns. All responses are logged on Algorand testnet for transparency.</p>
+        <div id="chat-log" class="chat-log">
+            <!-- Chat messages will appear here -->
+        </div>
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Type your message here..." />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const userInput = document.getElementById('user-input');
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            // Add user message to chat
+            addMessage('You', message);
+            userInput.value = '';
+
+            // Send to backend
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    addMessage('AI', `Error: ${data.error}`);
+                } else {
+                    addMessage('AI', data.response);
+                    addMessage('Blockchain', `Response hash: ${data.hash}<br>Transaction ID: ${data.txid}<br><a href="https://testnet.algoexplorer.io/tx/${data.txid}" target="_blank">View on AlgoExplorer</a>`);
+                }
+            } catch (error) {
+                addMessage('AI', `Network error: ${error.message}`);
+            }
+        }
+
+        function addMessage(sender, text) {
+            const chatLog = document.getElementById('chat-log');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
+            chatLog.appendChild(messageDiv);
+            chatLog.scrollTop = chatLog.scrollHeight;
+        }
+
+        // Allow sending message with Enter key
+        document.getElementById('user-input').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>

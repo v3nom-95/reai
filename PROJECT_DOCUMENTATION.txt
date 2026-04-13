@@ -1,0 +1,701 @@
+================================================================================
+                    REAI: RESPONSIBLE AI MEDICAL ASSISTANT
+                    Blockchain-Integrated Decentralized ML System
+================================================================================
+
+PROJECT OVERVIEW
+================================================================================
+
+REAI (Responsible AI) is a blockchain-backed AI medical assistant that provides 
+general health advice while ensuring accountability through immutable storage on 
+the Algorand blockchain. The system implements true decentralized machine learning 
+where training proposals go through blockchain consensus before being applied.
+
+KEY OBJECTIVES:
+- Provide responsible, general health information (not personalized medical advice)
+- Ensure transparency and accountability through blockchain technology
+- Enable decentralized, consensus-based model training
+- Create an immutable audit trail of all AI interactions
+- Continuously learn from past queries stored on-chain
+
+FEATURES
+================================================================================
+
+1. RESPONSIBLE AI ASSISTANCE
+   - Rule-based medical knowledge covering 20+ health conditions
+   - Strong disclaimers about general information only
+   - Never provides personalized diagnoses or prescriptions
+   - Directs users to healthcare professionals for specific concerns
+
+2. BLOCKCHAIN INTEGRATION
+   - Algorand testnet for immutable data storage
+   - Local blockchain ledger with proof-of-work consensus
+   - All AI interactions stored permanently
+   - Transaction IDs for verification
+
+3. DECENTRALIZED ML TRAINING
+   - Training proposals require blockchain consensus
+   - Validators approve/reject model updates
+   - Only approved updates are applied to the model
+   - Full audit trail of all training decisions
+
+4. EMBEDDING-BASED SEMANTIC SEARCH
+   - Custom lightweight neural embeddings (128D)
+   - Dynamic vocabulary built from training data
+   - Cosine similarity for query matching
+   - Continuous learning improves accuracy over time
+
+5. MODEL PROVENANCE & TRANSPARENCY
+   - All training logged to blockchain
+   - Model hash tracking for integrity
+   - Checkpoint versioning with hashes
+   - Complete audit trail of model evolution
+
+================================================================================
+                              CORE COMPONENTS
+================================================================================
+
+1. FLASK WEB APPLICATION (app.py)
+   - Web server handling HTTP requests
+   - Chat interface endpoint (/chat)
+   - Training endpoints (/train)
+   - Blockchain status endpoints
+   - Decentralized ML workflow endpoints
+
+2. BLOCKCHAIN LEDGER (blockchain.py)
+   - Local blockchain with proof-of-work (SHA-256)
+   - Genesis block initialization
+   - Block mining with configurable difficulty
+   - Chain integrity verification
+   - Training record storage
+   - Validator approval tracking
+
+3. CUSTOM LLM (custom_model.py)
+   - Lightweight embedding-based model
+   - Dynamic vocabulary management
+   - Batch training with gradient updates
+   - Differential privacy support
+   - Checkpoint save/load functionality
+   - Proposal and validation methods
+
+4. MODEL MANAGEMENT (model.py)
+   - Model loading (custom LLM or SentenceTransformer)
+   - Encoding and inference
+   - Consensus-based training workflow
+   - On-chain dataset building
+   - Embedding-based similarity search
+
+================================================================================
+                            DETAILED PROJECT FLOW
+================================================================================
+
+SECTION 1: USER INTERACTION FLOW
+================================================================================
+
+1. USER SENDS MESSAGE
+   ┌─────────────────────────────────────────────────────────────┐
+   │ User accesses web interface at http://127.0.0.1:5000        │
+   │ Enters health-related question in chat box                 │
+   │ Clicks "Send" or presses Enter                              │
+   └─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+2. SERVER RECEIVES REQUEST
+   ┌─────────────────────────────────────────────────────────────┐
+   │ Flask app receives POST request to /chat endpoint           │
+   │ Extracts user_message from JSON payload                     │
+   │ Loads past interactions from blockchain (Algorand)          │
+   └─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+3. MODEL TRAINING ON QUERY
+   ┌─────────────────────────────────────────────────────────────┐
+   │ train_model_on_batch([user_message], learning_rate=0.01)    │
+   │                                                            │
+   │ Process:                                                   │
+   │ - Tokenize message into words                              │
+   │ - Build/update vocabulary                                  │
+   │ - Initialize random embeddings for new words               │
+   │ - Apply gradient updates to existing embeddings            │
+   │ - Compute model hash before and after                      │
+   │ - Log training metrics to local blockchain                  │
+   └─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+4. BLOCKCHAIN MINING
+   ┌─────────────────────────────────────────────────────────────┐
+   │ blockchain.mine_block(miner_id='medical-assistant')         │
+   │                                                            │
+   │ Process:                                                   │
+   │ - Collect pending records                                  │
+   │ - Create new block with:                                   │
+   │   * index: len(chain)                                      │
+   │   * timestamp: current UTC time                            │
+   │   * records: pending training/inference records            │
+   │   * miner: 'medical-assistant'                             │
+   │   * previous_hash: hash of last block                      │
+   │   * nonce: increment until valid hash found                │
+   │ - Valid hash = starts with "00" (difficulty=2)             │
+   │ - Add valid block to chain                                 │
+   └─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+5. RESPONSE GENERATION
+   ┌─────────────────────────────────────────────────────────────┐
+   │ Step A: Try embedding-based similarity search               │
+   │         find_similar_by_embedding(user_message, data)       │
+   │                                                            │
+   │ Process:                                                   │
+   │ - Encode all past queries + current query                  │
+   │ - Compute cosine similarity between query embeddings       │
+   │ - Find best matching past query                            │
+   │ - If similarity >= 0.65, return stored response            │
+   │ - Log query inference to blockchain                         │
+   │                                                            │
+   │ Step B: If no match found, use rule-based matching         │
+   │         get_medical_advice(user_message, data)             │
+   │                                                            │
+   │ Process:                                                   │
+   │ - Check message for medical keywords                       │
+   │ - Match against 20+ condition patterns                     │
+   │ - Return appropriate health guidance                       │
+   └─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+6. ADD DISCLAIMER
+   ┌─────────────────────────────────────────────────────────────┐
+   │ Append standard disclaimer to response:                     │
+   │ "Disclaimer: This is general information. Please consult   │
+   │  a healthcare professional for medical advice."             │
+   └─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+7. BLOCKCHAIN STORAGE (ALGORAND)
+   ┌─────────────────────────────────────────────────────────────┐
+   │ Create Algorand transaction:                                │
+   │ - sender: XXK264WAX6D5LOU5OUSNCO5MDEH6RKQNRENHGGHDS43Q2STN2DYFEFWDGY  │
+   │ - receiver: same as sender                                  │
+   │ - amt: 0 (no ALGO transferred)                              │
+   │ - note: JSON with query, response, hash                     │
+   │                                                            │
+   │ Sign and send transaction to Algorand testnet               │
+   │ Wait for confirmation (4 rounds)                            │
+   │ Mine local blockchain block                                 │
+   └─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+8. RETURN RESPONSE
+   ┌─────────────────────────────────────────────────────────────┐
+   │ JSON response with:                                         │
+   │ {                                                           │
+   │   "response": "For fever, rest in bed...",                  │
+   │   "txid": "Algorand transaction ID",                        │
+   │   "hash": "SHA-256 of response",                            │
+   │   "model_info": { vocab_size, training_steps },             │
+   │   "blockchain_stats": { chain_length, total_records }       │
+   │ }                                                           │
+   └─────────────────────────────────────────────────────────────┘
+
+
+SECTION 2: DECENTRALIZED ML TRAINING FLOW
+================================================================================
+
+OVERVIEW: Training requires consensus - proposals must be approved before applied
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│    PROPOSE          APPROVE           APPLY            VERIFY              │
+│      │                │                 │                 │                  │
+│      ▼                ▼                 ▼                 ▼                  │
+│  ┌───────┐       ┌───────┐         ┌───────┐        ┌───────┐              │
+│  │Create │       │Validator│        │Check  │        │Query  │              │
+│  │Proposal│ ───► │ Approve│ ───►  │Approved│ ───► │Blockchain│             │
+│  │ Hash  │       │ on Chain│        │ on Chain│       │ for History│        │
+│  └───────┘       └───────┘         └───────┘        └───────┘              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+STEP 1: PROPOSE TRAINING UPDATE
+================================================================================
+
+API Call:
+POST /decentralized/propose-training
+{
+  "texts": ["I have a fever", "High temperature"],
+  "learning_rate": 0.01
+}
+
+Process:
+1. receive_file texts and learning_rate from request
+2. Call propose_training_to_consensus(texts, learning_rate)
+3. Inside model.py:
+   - Call custom_llm.propose_training_update(texts, learning_rate)
+4. Inside custom_model.py:
+   - Create proposal dictionary:
+     {
+       'texts': texts,
+       'labels': [0, 0],
+       'learning_rate': learning_rate,
+       'model_version': current_version,
+       'model_hash_before': current_model_hash,
+       'timestamp': ISO format
+     }
+   - Compute proposal_hash = SHA-256(proposal)[:16]
+   - Log to blockchain: blockchain.add_record('training_proposal', {...})
+   - Return proposal_hash
+5. Mine block: blockchain.mine_block(miner_id='training-proposal')
+6. Return response with proposal_hash
+
+
+STEP 2: VALIDATOR APPROVAL
+================================================================================
+
+API Call:
+POST /decentralized/approve-proposal
+{
+  "proposal_hash": "a1b2c3d4e5f6",
+  "validator_id": "validator-alice"
+}
+
+Process:
+1. receive_file proposal_hash and validator_id from request
+2. Call approve_training_proposal(proposal_hash, validator_id)
+3. In model.py:
+   - Add record: blockchain.add_record('validator_approval', {
+       'proposal_hash': proposal_hash,
+       'validator_id': validator_id,
+       'timestamp': current time
+     })
+   - Mine block: blockchain.mine_block(miner_id=validator_id)
+4. Return approval confirmation
+
+
+STEP 3: APPLY CONSENSUS TRAINING
+================================================================================
+
+API Call:
+POST /decentralized/apply-training
+{
+  "proposal_hash": "a1b2c3d4e5f6",
+  "texts": ["I have a fever", "High temperature"],
+  "learning_rate": 0.01
+}
+
+Process:
+1. receive_file proposal_hash, texts, learning_rate
+2. Call apply_consensus_training(proposal_hash, texts, learning_rate)
+3. In model.py -> custom_llm.apply_approved_training():
+   - Verify blockchain approval: blockchain.validate_model_update(proposal_hash)
+   - If not approved: return {'status': 'failed', 'reason': 'Not approved'}
+   - If approved: proceed with training
+4. Training process (same as user query training):
+   - Tokenize texts
+   - Build/update vocabulary
+   - Initialize/update embeddings
+   - Compute metrics (vocab_before, vocab_after, new_words)
+   - Update model hash
+   - Log to blockchain: blockchain.add_record('model_update_approved', {...})
+5. Mine block: blockchain.mine_block(miner_id='training-executor')
+6. Return training metrics
+
+
+STEP 4: VERIFY & MONITOR
+================================================================================
+
+API Call:
+GET /decentralized/status
+
+Process:
+1. Get blockchain chain: blockchain.get_chain()
+2. Count statistics:
+   - total_proposals: count of 'training_proposal' records
+   - total_approvals: count of 'validator_approval' records
+   - applied_updates: count of 'model_update_approved' records
+   - pending_records: count of unmined records
+3. Return comprehensive status:
+{
+  "blockchain": { chain_length, total_records, is_valid },
+  "model": { name, version, vocab_size, training_steps },
+  "decentralized_stats": { total_proposals, total_approvals, ... },
+  "consensus_required": true,
+  "validators_required": 1
+}
+
+
+================================================================================
+                          SUPPORTED MEDICAL CONDITIONS
+================================================================================
+
+1. Fever & Temperature
+2. Headaches & Migraines
+3. Cough & Respiratory Issues
+4. Sore Throat
+5. Colds & Flu
+6. Digestive Issues (Nausea, Vomiting, Diarrhea)
+7. Pain Management & Injuries
+8. Diabetes
+9. Heart Health
+10. Mental Health (Anxiety, Depression, Stress)
+11. Sleep Disorders
+12. Allergies
+13. Skin Conditions
+14. Eye & Ear Issues
+15. Dental Problems
+
+
+================================================================================
+                          TECHNICAL ARCHITECTURE
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           REAI SYSTEM ARCHITECTURE                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                      FLASK WEB APPLICATION                          │   │
+│  │                     /, /chat, /train, /model-info                   │   │
+│  │                     /decentralized/* endpoints                      │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│           │                        │                       │               │
+│           │                        │                       │               │
+│    ┌──────┴──────┐          ┌──────┴──────┐       ┌──────┴──────┐        │
+│    │             │          │             │       │             │        │
+│  ┌───────┐  ┌───────────┐ ┌───────┐ ┌───────────┐ ┌───────┐ ┌───────────┐ │
+│  │Custom │  │ Blockchain│ │Algorand│ │Medical    │ │Model  │ │Web        │ │
+│  │  LLM  │  │   Ledger  │ │Testnet │ │Knowledge  │ │Manager│ │Interface  │ │
+│  │       │  │           │ │        │ │Base       │ │       │ │           │ │
+│  │•Embed │  │•POW       │ │•Immutable│ │•Rules    │ │•Load  │ │•HTML/CSS  │ │
+│  │•Train │  │•Records   │ │•Storage │ │•Keywords │ │•Encode│ │•Chat      │ │
+│  │•Vocab │  │•History   │ │•Verify  │ │•Responses│ │•Search│ │•Display   │ │
+│  └───────┘  └───────────┘ └───────┘ └───────────┘ └───────┘ └───────────┘ │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                          BLOCKCHAIN DATA STRUCTURES
+================================================================================
+
+GENESIS BLOCK:
+{
+  'index': 0,
+  'timestamp': '2024-01-01T00:00:00',
+  'records': [],
+  'previous_hash': '0',
+  'nonce': 0,
+  'hash': '00abc123...'
+}
+
+TRAINING PROPOSAL RECORD:
+{
+  'type': 'training_proposal',
+  'timestamp': '2024-01-01T12:00:00',
+  'data': {
+    'model_name': 'custom-medical-llm-v1',
+    'proposal_hash': 'a1b2c3d4e5f6',
+    'proposal': {
+      'texts': ['I have a fever', ...],
+      'learning_rate': 0.01,
+      'model_version': 1,
+      'model_hash_before': 'xyz123',
+      'timestamp': '2024-01-01T12:00:00'
+    }
+  }
+}
+
+VALIDATOR APPROVAL RECORD:
+{
+  'type': 'validator_approval',
+  'timestamp': '2024-01-01T12:01:00',
+  'data': {
+    'proposal_hash': 'a1b2c3d4e5f6',
+    'validator_id': 'validator-alice'
+  }
+}
+
+MODEL UPDATE APPROVED RECORD:
+{
+  'type': 'model_update_approved',
+  'timestamp': '2024-01-01T12:02:00',
+  'data': {
+    'model_name': 'custom-medical-llm-v1',
+    'model_version': 1,
+    'proposal_hash': 'a1b2c3d4e5f6',
+    'metrics': {
+      'batch_size': 2,
+      'vocab_before': 150,
+      'vocab_after': 165,
+      'new_words': 15,
+      'model_hash_before': 'xyz123',
+      'model_hash_after': 'abc456'
+    }
+  }
+}
+
+QUERY INFERENCE RECORD:
+{
+  'type': 'query_inference',
+  'timestamp': '2024-01-01T12:03:00',
+  'data': {
+    'query': 'I have a fever',
+    'best_match_idx': 0,
+    'similarity_score': 0.85,
+    'model_used': 'custom-llm'
+  }
+}
+
+MODEL CHECKPOINT RECORD:
+{
+  'type': 'model_checkpoint',
+  'timestamp': '2024-01-01T12:04:00',
+  'data': {
+    'model_name': 'custom-medical-llm-v1',
+    'model_version': 1,
+    'checkpoint_path': 'checkpoints/model_checkpoint.json',
+    'checkpoint_hash': 'def789',
+    'model_hash': 'abc456',
+    'vocab_size': 165,
+    'training_steps': 5
+  }
+}
+
+
+================================================================================
+                          API ENDPOINTS
+================================================================================
+
+CHAT & INTERACTION:
+  GET  /                     - Chat interface (HTML)
+  POST /chat                 - Send message, get AI response
+
+MODEL MANAGEMENT:
+  GET  /model-info           - Get model information and blockchain stats
+  GET  /blockchain-history   - Get transaction history
+  POST /train                - Manual model training
+  POST /save-checkpoint      - Save model checkpoint
+
+DECENTRALIZED ML:
+  POST /decentralized/propose-training     - Step 1: Propose training
+  POST /decentralized/approve-proposal     - Step 2: Validator approval
+  POST /decentralized/apply-training       - Step 3: Apply approved training
+  GET  /decentralized/status               - Get consensus status
+
+
+================================================================================
+                          INSTALLATION & SETUP
+================================================================================
+
+PREREQUISITES:
+  - Python 3.8+
+  - pip package manager
+  - Algorand testnet account (with ALGO for transactions)
+
+INSTALLATION:
+  git clone https://github.com/VenkatBabu95/reai.git
+  cd reai
+  pip install -r requirements.txt
+
+DEPENDENCIES:
+  - Flask: Web framework
+  - py-algorand-sdk: Blockchain integration
+  - sentence-transformers: Embedding model (fallback)
+  - numpy: Numerical operations
+  - difflib: String similarity matching
+
+STARTING THE SERVER:
+  python app.py
+
+ACCESSING THE APPLICATION:
+  Open browser to http://127.0.0.1:5000
+
+
+================================================================================
+                          RUNNING THE SYSTEM
+================================================================================
+
+METHOD 1: WEB INTERFACE
+  1. Start server: python app.py
+  2. Open http://127.0.0.1:5000
+  3. Type health question
+  4. View response with transaction ID and blockchain stats
+
+METHOD 2: API CALLS
+  # Chat
+  curl -X POST http://localhost:5000/chat \
+    -H "Content-Type: application/json" \
+    -d '{"message": "I have a fever"}'
+
+  # Train model
+  curl -X POST http://localhost:5000/train \
+    -H "Content-Type: application/json" \
+    -d '{"texts": ["I have a fever", "My throat hurts"], "learning_rate": 0.01}'
+
+  # Decentralized workflow
+  # Step 1: Propose
+  PROPOSAL=$(curl -s -X POST http://localhost:5000/decentralized/propose-training \
+    -H "Content-Type: application/json" \
+    -d '{"texts":["I have a fever"]}' | jq -r '.proposal.proposal_hash')
+  
+  # Step 2: Approve
+  curl -s -X POST http://localhost:5000/decentralized/approve-proposal \
+    -H "Content-Type: application/json" \
+    -d "{\"proposal_hash\":\"$PROPOSAL\",\"validator_id\":\"validator-1\"}"
+  
+  # Step 3: Apply
+  curl -s -X POST http://localhost:5000/decentralized/apply-training \
+    -H "Content-Type: application/json" \
+    -d "{\"proposal_hash\":\"$PROPOSAL\",\"texts\":[\"I have a fever\"]}"
+
+  # Check status
+  curl http://localhost:5000/decentralized/status | jq
+
+METHOD 3: DEMO SCRIPT
+  python demo_decentralized_ml.py
+
+
+================================================================================
+                          SECURITY PROPERTIES
+================================================================================
+
+1. CONSENSUS REQUIREMENT
+   ✓ Training only applied if validators approve
+   ✓ Proposals immutable (hash-based)
+   ✓ Approval trail permanently on blockchain
+
+2. DATA INTEGRITY
+   ✓ Model hash before/after tracked
+   ✓ Proposal hash links updates
+   ✓ Complete audit trail
+
+3. DECENTRALIZATION
+   ✓ Validators can reject proposals
+   ✓ Multiple validators supported
+   ✓ No single point of control
+
+4. TRANSPARENCY
+   ✓ All training decisions on-chain
+   ✓ Model evolution fully auditable
+   ✓ Anyone can verify blockchain
+
+
+================================================================================
+                          IMPORTANT DISCLAIMERS
+================================================================================
+
+⚠️  THIS AI IS NOT A SUBSTITUTE FOR PROFESSIONAL MEDICAL ADVICE
+   - Always consult qualified healthcare professionals
+   - Never use for emergencies - call emergency services
+   - Responses are for general information only
+   - Individual health conditions vary - seek personalized care
+
+
+================================================================================
+                          FILE STRUCTURE
+================================================================================
+
+reai/
+├── app.py                      # Flask web application
+├── model.py                    # Model management & ML logic
+├── blockchain.py               # Local blockchain ledger
+├── custom_model.py             # Custom LLM implementation
+├── demo_decentralized_ml.py    # Decentralized ML demo
+├── test_blockchain_model.py    # Test suite
+├── medical_data.json           # Medical Q&A data
+├── requirements.txt            # Python dependencies
+├── README.md                   # Main documentation
+├── DECENTRALIZED_ML.md         # Decentralized ML guide
+├── README_BLOCKCHAIN_ML.md     # Blockchain ML guide
+├── PROJECT_DOCUMENTATION.txt   # This file
+├── static/
+│   └── style.css              # Web interface styling
+├── templates/
+│   └── index.html             # Chat interface HTML
+└── checkpoints/
+    └── model_checkpoint.json  # Saved model state
+
+
+================================================================================
+                          ADVANCED FEATURES
+================================================================================
+
+1. DIFFERENTIAL PRIVACY
+   Training with DP parameters:
+   curl -X POST http://localhost:5000/decentralized/apply-training \
+     -H "Content-Type: application/json" \
+     -d '{
+       "proposal_hash": "a1b2c3d4",
+       "texts": ["I have a fever"],
+       "learning_rate": 0.01,
+       "dp_params": {
+         "clipping_norm": 1.0,
+         "noise_scale": 0.01
+       }
+     }'
+
+2. IPFS CHECKPOINT STORAGE
+   Save model to IPFS-simulated storage:
+   curl -X POST http://localhost:5000/save-checkpoint
+
+3. ON-CHAIN DATASET BUILDING
+   Build training dataset from blockchain records:
+   curl -X POST http://localhost:5000/decentralized/propose-from-chain \
+     -H "Content-Type: application/json" \
+     -d '{"limit": 200, "filter_pii": true}'
+
+
+================================================================================
+                          FUTURE ENHANCEMENTS
+================================================================================
+
+1. MULTI-SIGNATURE VALIDATION
+   - Require M-of-N validators to approve
+   - Different voting weights per validator
+
+2. STAKE-BASED VALIDATORS
+   - Validators stake tokens
+   - Penalty system for rejecting good updates
+
+3. PRODUCTION DEPLOYMENT
+   - Algorand mainnet instead of testnet
+   - Database for persistent storage
+   - Model versioning and rollback
+   - Monitoring and logging
+
+4. RESEARCH EXTENSIONS
+   - Multi-task learning (symptoms → conditions)
+   - Domain-specific fine-tuning
+   - Federated learning across hospitals
+   - Privacy-preserving model updates
+
+
+================================================================================
+                          PROJECT STATISTICS
+================================================================================
+
+Supported Medical Conditions: 15+
+Blockchain Difficulty: 2 (POW)
+Embedding Dimension: 128
+Default Learning Rate: 0.01
+Similarity Threshold: 0.65
+Validators Required: 1 (configurable)
+
+Model Statistics:
+- Model Name: custom-medical-llm-v1
+- Vocabulary: Dynamically built
+- Training: Continuous, on every query
+- Logging: All operations to blockchain
+
+
+================================================================================
+                              END OF DOCUMENTATION
+================================================================================
+
+For more information, see:
+- README.md: Main project documentation
+- DECENTRALIZED_ML.md: Detailed decentralized ML guide
+- README_BLOCKCHAIN_ML.md: Blockchain integration details
+
+GitHub: https://github.com/VenkatBabu95/reai
+================================================================================
+
