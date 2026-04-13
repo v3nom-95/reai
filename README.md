@@ -1,142 +1,157 @@
-# Responsible AI Medical Assistant
+# 🚑 REAI — Responsible AI Medical Assistant
 
-A trustworthy, blockchain-backed AI medical assistant that provides responsible health advice while ensuring accountability through immutable storage on the Algorand blockchain.
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+![Python 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue.svg)
+![Algorand Testnet](https://img.shields.io/badge/Algorand-Testnet-blueviolet.svg)
 
-- License: MIT
+A blockchain-backed, responsible AI medical assistant built with Python, Flask, and the Algorand SDK. The app stores every interaction on the Algorand testnet so that responses are transparent, auditable, and traceable.
 
-## Features
+---
 
-- **Responsible AI**: Provides general health information with strong disclaimers, never gives personalized medical advice
-- **Blockchain Integration**: All AI interactions are stored immutably on Algorand testnet for transparency and learning
-- **Learning System**: AI improves over time by learning from similar past queries stored on-chain
-- **Medical Knowledge**: Covers 20+ common health conditions with detailed, evidence-based guidance
+## ✨ Project Overview
 
-## How It Works
+REAI is designed to combine simple medical guidance with strong disclaimers and safe behavior. It is ideal for learning how to integrate AI-style Q&A with secure blockchain storage.
 
-### Architecture
-- **Backend**: Python Flask web application
-- **AI Engine**: Custom rule-based system augmented with embedding-based semantic search for improved matching and learning
-- **Blockchain**: Algorand testnet for immutable data storage and retrieval
-- **Frontend**: Simple HTML/CSS chat interface
+### Why this project exists
+- Provide general health information without offering medical diagnosis
+- Record all user interactions immutably on Algorand Testnet
+- Let the system learn from previous health questions and responses
+- Keep the interface easy to use with a clean chat experience
 
-### AI Logic
-1. **Query Processing**: User submits a health-related question
-2. **Blockchain Learning**: Searches past interactions on-chain for similar queries
-3. **Response Generation**: Uses rule-based matching for medical conditions
-4. **Storage**: Saves the interaction on blockchain for future learning
+---
 
-## Installation & Setup
+## 🚀 Key Features
+
+- **Responsible medical guidance** with clear disclaimers
+- **Algorand Testnet integration** using `py-algorand-sdk`
+- **Blockchain audit trail** for every chat interaction
+- **Semantic learning** from similar past queries
+- **Flask-powered UI** with simple chat interface
+
+---
+
+## 🧠 Architecture
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| Backend | Flask | Web server, routing, API |
+| AI | Rule-based logic + embeddings | Health query matching and answer selection |
+| Blockchain | Algorand Testnet | Persistent, immutable storage |
+| Frontend | HTML/CSS | Chat interface and interaction |
+
+---
+
+## 🛠️ Install & Setup
 
 ### Prerequisites
-- Python 3.8+
-- pip
-- Algorand testnet account with some ALGO for transactions
+- Python 3.8 or later
+- `pip`
+- Algorand Testnet account with ALGO for transaction fees
 
-### Installation
+### Install dependencies
 ```bash
-# Clone the repository
 git clone https://github.com/VenkatBabu95/reai.git
 cd reai
-
-# Install dependencies
 pip install -r requirements.txt
 ```
 
-> This project uses `py-algorand-sdk` for Algorand blockchain integration, installed via `requirements.txt`.
+> `requirements.txt` includes `py-algorand-sdk` so Algorand blockchain interaction works correctly.
 
-### Configuration
-The app uses hardcoded Algorand testnet credentials. Ensure your testnet account has sufficient ALGO for transaction fees.
-
-## Running the Application
-
-### Start the Server
+### Run the app
 ```bash
 python app.py
 ```
 
-The app will run on `http://127.0.0.1:5000`
+Open `http://127.0.0.1:5000` in your browser to use the medical chat assistant.
 
-### Access the Chat Interface
-1. Open your browser and navigate to `http://127.0.0.1:5000`
-2. You'll see a simple chat interface
-3. Type your health-related question in the input box
-4. Click "Send" or press Enter
+---
 
-### Example Interactions
+## 💬 Usage Guide
 
-**User**: "I have a fever"
-**AI**: "For fever, rest in bed, stay hydrated... [detailed advice] ... Disclaimer: This is general information. Please consult a healthcare professional for medical advice."
+### How to chat
+1. Visit `http://127.0.0.1:5000`
+2. Type a health-related question
+3. Press Enter or click **Send**
+4. Read the response and the safety disclaimer
 
-**User**: "I'm feeling anxious"
-**AI**: "For anxiety or stress, practice deep breathing... [detailed advice] ... Disclaimer: This is general information. Please consult a healthcare professional for medical advice."
+### Example prompts
+- `I have a headache and fever`
+- `What should I do for a sore throat?`
+- `How can I manage stress and anxiety?`
 
-## Supported Health Topics
+---
 
-The AI provides guidance for:
-- Fever & Temperature
-- Headaches & Migraines
-- Cough & Respiratory Issues
-- Sore Throat
-- Colds & Flu
-- Digestive Issues (Nausea, Vomiting, Diarrhea)
-- Pain Management & Injuries
-- Diabetes
-- Heart Health
-- Mental Health (Anxiety, Depression, Stress)
-- Sleep Disorders
-- Allergies
-- Skin Conditions
-- Eye & Ear Issues
-- Dental Problems
+## 📌 Supported Health Topics
 
-## Blockchain Features
+- Fever & illnesses
+- Headaches & migraines
+- Respiratory symptoms
+- Throat and cold symptoms
+- Digestive issues
+- Pain and injury management
+- Diabetes and heart health
+- Mental health support
+- Sleep, allergies, skin, eye, and dental issues
 
-### Transparency
-- Every AI interaction is recorded on the Algorand blockchain
-- Each response includes a transaction ID for verification
-- Data is immutable and publicly auditable
+---
 
-### Learning Mechanism
-- AI queries past blockchain data for similar questions
-- Improves responses based on historical interactions
-- Decentralized learning ensures no single point of control
+## 🔗 Algorand Blockchain Features
 
-## Important Disclaimers
+- All chat results are saved as transactions on the Algorand Testnet
+- Each interaction becomes part of an immutable audit trail
+- The app can search previous records to improve similarity matching
+- Testnet usage means development is safe and isolated from mainnet
 
-⚠️ **This AI is NOT a substitute for professional medical advice**
-- Always consult qualified healthcare professionals
-- Never use this for emergencies - call emergency services
-- Responses are for general information only
-- Individual health conditions vary - seek personalized care
+---
 
-## Technical Details
+## ⚠️ Important Disclaimer
 
-### Dependencies
-- Flask: Web framework
-- py-algorand-sdk: Blockchain integration
-- difflib: Similarity matching for learning
-- sentence-transformers + torch: Embedding-based semantic search for improved matching
-- numpy: Numerical operations for embeddings
+This app is for educational and informational purposes only.
 
-> Third-party dependencies are installed via `pip` and are governed by their own licenses. This project itself is licensed under the MIT License.
+- Not medical advice
+- Not a diagnosis tool
+- Not a replacement for professional healthcare
+- Always consult a qualified medical professional for personal health decisions
 
-### API Endpoints
-- `GET /`: Chat interface
-- `POST /chat`: Send message and receive AI response
+---
 
-### Blockchain Integration
-- Uses Algorand testnet indexer for data retrieval
-- Stores JSON data in transaction notes
-- Handles large responses by storing hashes when needed
+## 📦 Dependencies
 
-## Contributing
+The app uses the following Python packages:
 
-This project demonstrates responsible AI development with blockchain accountability. For improvements:
-1. Enhance medical knowledge base
-2. Improve similarity matching algorithms
-3. Add more health topics
-4. Optimize blockchain storage
+- `Flask` — web server
+- `py-algorand-sdk` — Algorand blockchain integration
+- `sentence-transformers` — semantic embeddings
+- `torch` — deep learning backend for embeddings
+- `numpy` — numerical operations
 
-## License
+> External libraries are governed by their own licenses. This repository is licensed under the MIT License.
 
-This project is licensed under the MIT License. See the included `LICENSE` file for details.
+---
+
+## 📁 Project Files
+
+- `app.py` — main Flask application
+- `blockchain.py` — Algorand testnet logic and transaction management
+- `custom_model.py` — AI logic and response generation
+- `model.py` — medical topic modeling and embeddings
+- `templates/index.html` — chat interface
+- `static/style.css` — styling for the chat UI
+- `LICENSE` — MIT license for this project
+
+---
+
+## 🤝 Contributing
+
+Feel free to improve the project by:
+
+- Expanding the medical knowledge base
+- Improving the learning algorithm
+- Adding additional safety checks
+- Enhancing the UI experience
+
+---
+
+## 📜 License
+
+This project is licensed under the MIT License. See `LICENSE` for full terms.

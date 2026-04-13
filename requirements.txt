@@ -1,3 +1,4 @@
+# Python dependencies for REAI
 flask
 py-algorand-sdk
 sentence-transformers
