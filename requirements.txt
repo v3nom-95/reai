@@ -1,6 +1,5 @@
-# Python dependencies for REAI
 flask
 py-algorand-sdk
-sentence-transformers
-torch
+torch>=2.0.0
 numpy
+PyNaCl

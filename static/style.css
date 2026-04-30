@@ -134,19 +134,20 @@ body {
 .badge-green  { background: var(--green); }
 .badge-yellow { background: var(--yellow); }
 
-/* ── Node rows ── */
-.node-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 0;
-  font-size: 11px;
+/* ── Validator registry (real on-chain data) ── */
+.vr-row {
+  padding: 5px 0;
   border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
-.node-row:last-child { border-bottom: none; }
-.node-id   { flex: 1; font-weight: 600; }
-.node-lat  { color: var(--muted); }
-.node-role { color: var(--purple); font-size: 10px; }
+.vr-row:last-child { border-bottom: none; }
+.vr-name  { font-weight: 600; font-size: 11px; color: var(--green); }
+.vr-addr  { font-size: 10px; color: var(--muted); }
+.vr-meta  { display: flex; align-items: center; gap: 6px; }
+.vr-ts    { font-size: 10px; color: var(--muted); }
+.vr-detail{ font-size: 10px; color: var(--muted); }
 
 /* ── Chat main ── */
 .chat-main {
@@ -215,6 +216,24 @@ body {
   animation: pulse 1.2s infinite;
 }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* ── Thinking steps (live Algorand status) ── */
+.thinking-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: var(--bg3);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.t-step {
+  font-size: 11px;
+  color: var(--muted);
+  padding: 2px 0;
+}
+.t-step.done   { color: var(--green); }
+.t-step.active { color: var(--blue); animation: pulse 1.2s infinite; }
 
 /* ── Chat input ── */
 .chat-input-row {

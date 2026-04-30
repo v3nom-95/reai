@@ -29,8 +29,11 @@
     <div class="card">
       <div class="card-title">🧠 Model State</div>
       <div class="stat-row"><span>Name</span><span id="s-name">—</span></div>
+      <div class="stat-row"><span>Architecture</span><span id="s-arch" class="small">—</span></div>
+      <div class="stat-row"><span>Parameters</span><span id="s-params" class="highlight">—</span></div>
       <div class="stat-row"><span>Vocab Size</span><span id="s-vocab" class="highlight">—</span></div>
       <div class="stat-row"><span>Training Steps</span><span id="s-steps" class="highlight">—</span></div>
+      <div class="stat-row"><span>Last Loss</span><span id="s-loss" class="highlight">—</span></div>
       <div class="stat-row"><span>Embedding Dim</span><span id="s-dim">—</span></div>
       <div class="stat-row"><span>Model Hash</span><span id="s-hash" class="mono small">—</span></div>
       <div class="stat-row"><span>Algo Records</span><span id="s-algo-rec" class="highlight">—</span></div>
@@ -53,8 +56,10 @@
     </div>
 
     <div class="card">
-      <div class="card-title">🌐 P2P Validator Nodes</div>
-      <div id="nodes-list"></div>
+      <div class="card-title">🔑 Registered Validators
+        <button class="btn-xs" onclick="loadValidatorRegistry()">↻</button>
+      </div>
+      <div id="validator-registry"></div>
     </div>
   </aside>
 
@@ -185,8 +190,11 @@ async function refreshStats() {
     const m = d.model, b = d.blockchain;
 
     $('s-name').textContent    = m.name || '—';
+    $('s-arch').textContent    = m.architecture || '—';
+    $('s-params').textContent  = m.parameters ? m.parameters.toLocaleString() : '—';
     $('s-vocab').textContent   = m.vocab_size ?? '—';
     $('s-steps').textContent   = m.training_steps ?? '—';
+    $('s-loss').textContent    = m.last_loss != null ? m.last_loss.toFixed(4) : '—';
     $('s-dim').textContent     = m.embedding_dim ?? '—';
     $('s-hash').textContent    = m.model_hash || '—';
     $('s-algo-rec').textContent= m.algo_records ?? '—';
@@ -222,20 +230,89 @@ async function refreshStats() {
   }
 }
 
-async function refreshNodes() {
+async function loadValidatorRegistry() {
   try {
     const d = await fetch('/decentralized/network-nodes').then(r=>r.json());
-    $('nodes-list').innerHTML = (d.nodes||[]).map(n => `
-      <div class="node-row">
-        <span class="dot ${n.status==='ONLINE'?'dot-green':'dot-yellow'}"></span>
-        <span class="node-id">${n.id}</span>
-        <span class="node-lat">${n.latency}</span>
-        <span class="node-role">${n.role}</span>
-      </div>`).join('');
-  } catch {}
+    const nodes = d.nodes || [];
+    $('validator-registry').innerHTML = nodes.length ? nodes.map(n => `
+      <div class="vr-row">
+        <div class="vr-name">${n.id}</div>
+        <div class="vr-addr mono">${n.address.slice(0,14)}…</div>
+        <div class="vr-meta">
+          <span class="badge badge-green">${n.approvals} approvals</span>
+          <span class="vr-ts">${n.last_active === 'Never' ? 'No activity' : ts(n.last_active)}</span>
+        </div>
+        <div class="vr-detail">${n.key_type} · ${n.network}</div>
+      </div>`).join('')
+    : '<div class="muted">No validators registered</div>';
+  } catch(e) {
+    $('validator-registry').innerHTML = '<div class="muted">Error loading validators</div>';
+  }
 }
 
 // ── Chat ──────────────────────────────────────────────────────────────────────
+function showThinkingSteps() {
+  const log = $('chat-log');
+  const wrapper = document.createElement('div');
+  wrapper.className = 'msg msg-ai';
+  wrapper.id = 'thinking-steps-wrapper';
+
+  const stepsDiv = document.createElement('div');
+  stepsDiv.className = 'thinking-steps';
+  stepsDiv.id = 'thinking-steps';
+  wrapper.appendChild(stepsDiv);
+  log.appendChild(wrapper);
+  log.scrollTop = log.scrollHeight;
+
+  const steps = [
+    '🧠 Processing query with Transformer model...',
+    '⛓ Writing audit record to Algorand Testnet...',
+    '⏳ Awaiting block confirmation (~4s)...',
+  ];
+
+  let current = 0;
+
+  // Show first step immediately
+  const firstEl = document.createElement('div');
+  firstEl.className = 't-step active';
+  firstEl.textContent = steps[0];
+  stepsDiv.appendChild(firstEl);
+  current = 1;
+
+  const interval = setInterval(() => {
+    if (current >= steps.length) return;
+    // Mark previous as done
+    const prev = stepsDiv.querySelector('.t-step.active');
+    if (prev) { prev.classList.remove('active'); prev.classList.add('done'); }
+    // Add next step
+    const el = document.createElement('div');
+    el.className = 't-step active';
+    el.textContent = steps[current];
+    stepsDiv.appendChild(el);
+    log.scrollTop = log.scrollHeight;
+    current++;
+  }, 1200);
+
+  return {
+    resolve(confirmed) {
+      clearInterval(interval);
+      // Mark last active as done
+      const active = stepsDiv.querySelector('.t-step.active');
+      if (active) { active.classList.remove('active'); active.classList.add('done'); }
+      // Show confirmed step
+      const finalEl = document.createElement('div');
+      finalEl.className = 't-step done';
+      finalEl.textContent = confirmed
+        ? '✅ Confirmed on Algorand! Returning response...'
+        : '✅ Response ready (Algorand write pending)...';
+      stepsDiv.appendChild(finalEl);
+      log.scrollTop = log.scrollHeight;
+      // Remove after short delay
+      setTimeout(() => { wrapper.remove(); }, 600);
+    }
+  };
+}
+
 async function sendMessage() {
   const input = $('user-input');
   const msg   = input.value.trim();
@@ -244,7 +321,7 @@ async function sendMessage() {
   $('send-btn').disabled = true;
 
   appendChat('user', msg);
-  const thinking = appendChat('ai', '<span class="thinking">Querying Algorand…</span>');
+  const thinking = showThinkingSteps();
 
   try {
     const r = await fetch('/chat', {
@@ -254,16 +331,17 @@ async function sendMessage() {
     });
     const d = await r.json();
 
-    thinking.remove();
+    thinking.resolve(d.algo_confirmed);
 
     if (d.error) {
       appendChat('ai', `❌ ${d.error}`);
     } else {
       appendChat('ai', d.response, {
-        source: d.source,
-        hash:   d.hash,
-        txid:   d.txid,
-        url:    d.algo_url
+        source:        d.source,
+        hash:          d.hash,
+        txid:          d.txid,
+        url:           d.algo_url,
+        algo_confirmed: d.algo_confirmed
       });
       if (d.txid && d.txid !== 'pending' && !d.txid.startsWith('error')) {
         $('bottom-bar').style.display = 'flex';
@@ -273,7 +351,7 @@ async function sendMessage() {
       if (d.model_info) updateModelQuick(d.model_info);
     }
   } catch(e) {
-    thinking.remove();
+    thinking.resolve(false);
     appendChat('ai', `Network error: ${e.message}`);
   }
   $('send-btn').disabled = false;
@@ -287,12 +365,15 @@ function appendChat(role, html, meta) {
 
   let inner = `<div class="msg-bubble">${html}</div>`;
   if (meta) {
+    const txLabel = meta.algo_confirmed
+      ? `<a href="${meta.url}" target="_blank" class="meta-tx">⛓ Confirmed on Algorand ↗</a>`
+      : (meta.txid && meta.txid !== 'pending' && !meta.txid.startsWith('error')
+          ? `<a href="${meta.url}" target="_blank" class="meta-tx">⛓ Algorand TX ↗</a>`
+          : `<span class="meta-tx muted">⛓ ${meta.txid || 'pending'}</span>`);
     inner += `<div class="msg-meta">
       <span class="meta-source">📡 ${meta.source}</span>
       <span class="meta-hash mono">🔑 ${(meta.hash||'').slice(0,16)}…</span>
-      ${meta.txid && meta.txid!=='pending' && !meta.txid.startsWith('error')
-        ? `<a href="${meta.url}" target="_blank" class="meta-tx">⛓ Algorand TX ↗</a>`
-        : `<span class="meta-tx muted">⛓ ${meta.txid||'pending'}</span>`}
+      ${txLabel}
     </div>`;
   }
   div.innerHTML = inner;
@@ -304,6 +385,7 @@ function appendChat(role, html, meta) {
 function updateModelQuick(m) {
   $('s-vocab').textContent  = m.vocab_size ?? '—';
   $('s-steps').textContent  = m.training_steps ?? '—';
+  $('s-loss').textContent   = m.last_loss != null ? m.last_loss.toFixed(4) : '—';
   $('s-hash').textContent   = m.model_hash || '—';
 }
 
@@ -459,14 +541,14 @@ $('user-input').addEventListener('keypress', e => {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 refreshStats();
-refreshNodes();
+loadValidatorRegistry();
 loadProposals();
 loadAudit();
 loadValidators();
-setInterval(refreshStats,  15000);
-setInterval(refreshNodes,  10000);
-setInterval(loadAudit,     20000);
-setInterval(loadProposals, 30000);
+setInterval(refreshStats,         15000);
+setInterval(loadValidatorRegistry, 30000);
+setInterval(loadAudit,            20000);
+setInterval(loadProposals,        30000);
 </script>
 </body>
 </html>

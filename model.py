@@ -32,7 +32,7 @@ def encode_texts(texts):
     return model.encode(texts, convert_to_numpy=True)
 
 
-def train_model_on_batch(texts, labels=None, learning_rate: float = 0.01):
+def train_model_on_batch(texts, labels=None, learning_rate: float = 1e-3):
     if not USE_CUSTOM_LLM:
         return {"status": "not_trainable"}
     metrics = custom_llm.train_on_batch(texts, labels, learning_rate)

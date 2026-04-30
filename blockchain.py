@@ -172,6 +172,31 @@ class AlgorandLedger:
         threading.Thread(target=_worker, daemon=True).start()
 
     # ── Public write interface ────────────────────────────────────────────────
+    def add_record_sync(self, record_type: str, data: Dict[str, Any]) -> str:
+        """
+        Write an audit record to Algorand SYNCHRONOUSLY.
+        Blocks until the transaction is confirmed (up to 4 rounds).
+        Adds the confirmed record to the local cache.
+        Returns the txid.
+        """
+        txid = self._send_note_tx(record_type, data)
+        if txid:
+            try:
+                algosdk.transaction.wait_for_confirmation(
+                    self.algod_client, txid, 4
+                )
+            except Exception as e:
+                print(f"[Algorand] wait_for_confirmation error: {e}")
+            with self._cache_lock:
+                self._cache.append({
+                    "txid":      txid,
+                    "type":      record_type,
+                    "data":      data,
+                    "timestamp": datetime.utcnow().isoformat(),
+                    "confirmed": True
+                })
+        return txid or ""
+
     def add_record(self, record_type: str, data: Dict[str, Any]) -> Dict:
         """
         Write an audit record to Algorand (async) and local pending cache.

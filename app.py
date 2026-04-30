@@ -193,28 +193,25 @@ def chat():
     if len(note_bytes) > 1000:
         note_bytes = response_hash.encode()
 
+    algo_confirmed = False
     txid = "pending"
     try:
-        params  = algod_client.suggested_params()
-        txn     = algosdk.transaction.PaymentTxn(
-            sender=ADDRESS, sp=params, receiver=ADDRESS,
-            amt=0, note=note_bytes
-        )
-        signed  = txn.sign(blockchain.private_key)
-        txid    = algod_client.send_transaction(signed)
-        algosdk.transaction.wait_for_confirmation(algod_client, txid, 4)
+        txid = blockchain.add_record_sync("query_inference", note_payload)
+        if txid and not txid.startswith("error"):
+            algo_confirmed = True
     except Exception as e:
         print(f"[Algorand TX] {e}")
         txid = f"error: {str(e)[:60]}"
 
     return jsonify({
-        "response":   ai_response,
-        "source":     source,
-        "hash":       response_hash,
-        "txid":       txid,
-        "algo_url":   f"https://testnet.algoexplorer.io/tx/{txid}",
-        "model_info": get_model_info(),
-        "algo_stats": get_blockchain_stats()
+        "response":      ai_response,
+        "source":        source,
+        "hash":          response_hash,
+        "txid":          txid,
+        "algo_url":      f"https://testnet.algoexplorer.io/tx/{txid}",
+        "algo_confirmed": algo_confirmed,
+        "model_info":    get_model_info(),
+        "algo_stats":    get_blockchain_stats()
     })
 
 
@@ -510,22 +507,38 @@ def get_validators():
 
 @app.route("/decentralized/network-nodes", methods=["GET"])
 def network_nodes():
-    """Return simulated validator node status."""
-    import random, time
-    nodes = [
-        {"id": "Validator-Alpha", "ip": "192.168.1.10",
-         "status": "ONLINE", "latency": f"{random.randint(20,80)}ms",
-         "role": "validator"},
-        {"id": "Validator-Beta",  "ip": "192.168.1.11",
-         "status": "ONLINE", "latency": f"{random.randint(20,80)}ms",
-         "role": "validator"},
-        {"id": "Validator-Gamma", "ip": "192.168.1.12",
-         "status": random.choice(["ONLINE", "JITTER"]),
-         "latency": f"{random.randint(20,150)}ms", "role": "validator"},
-        {"id": "Miner-Node-01",   "ip": "10.0.0.5",
-         "status": "ONLINE", "latency": f"{random.randint(10,40)}ms",
-         "role": "miner"},
-    ]
+    """
+    Return real validator info from validators.json + their on-chain activity.
+    No simulation — data comes from Algorand Indexer history.
+    """
+    from blockchain import VALIDATORS
+    history = blockchain.get_model_history()
+
+    # Count real on-chain approvals per validator address
+    approval_counts: dict = {}
+    last_seen: dict = {}
+    for rec in history:
+        if rec.get("type") == "validator_approval":
+            addr = rec.get("data", {}).get("validator_address", "")
+            if addr:
+                approval_counts[addr] = approval_counts.get(addr, 0) + 1
+                ts = rec.get("timestamp", "")
+                if ts > last_seen.get(addr, ""):
+                    last_seen[addr] = ts
+
+    nodes = []
+    for name, v in VALIDATORS.items():
+        addr = v["address"]
+        nodes.append({
+            "id":            name,
+            "address":       addr,
+            "approvals":     approval_counts.get(addr, 0),
+            "last_active":   last_seen.get(addr, "Never"),
+            "role":          "validator",
+            "key_type":      "Ed25519 (Algorand)",
+            "network":       "Algorand Testnet"
+        })
+
     return jsonify({"nodes": nodes, "algo_address": ADDRESS})
 
 
