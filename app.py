@@ -208,7 +208,7 @@ def chat():
         "source":        source,
         "hash":          response_hash,
         "txid":          txid,
-        "algo_url":      f"https://testnet.algoexplorer.io/tx/{txid}",
+        "algo_url":      f"https://lora.algokit.io/testnet/transaction/{txid}",
         "algo_confirmed": algo_confirmed,
         "model_info":    get_model_info(),
         "algo_stats":    get_blockchain_stats()
@@ -246,7 +246,7 @@ def algo_audit():
         "by_type":  {k: len(v) for k, v in by_type.items()},
         "records":  history[:80],
         "address":  ADDRESS,
-        "explorer": f"https://testnet.algoexplorer.io/address/{ADDRESS}"
+        "explorer": f"https://lora.algokit.io/testnet/account/{ADDRESS}"
     })
 
 

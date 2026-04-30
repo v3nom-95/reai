@@ -351,7 +351,7 @@ class AlgorandLedger:
             "total_records":  len(history),
             "pending_records": pending,
             "record_types":   type_counts,
-            "explorer_url":   f"https://testnet.algoexplorer.io/address/{self.address}"
+            "explorer_url":   f"https://lora.algokit.io/testnet/account/{self.address}"
         }
 
     def get_chain(self) -> List[Dict]:

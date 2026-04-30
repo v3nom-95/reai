@@ -525,7 +525,7 @@ async function loadAudit() {
           <span class="audit-ts">${ts(r.timestamp)}</span>
           <span class="audit-txid mono">
             ${r.txid && r.txid!=='pending...'
-              ? `<a href="https://testnet.algoexplorer.io/tx/${r.txid}"
+              ? `<a href="https://lora.algokit.io/testnet/transaction/${r.txid}"
                     target="_blank">${r.txid.slice(0,10)}…↗</a>`
               : 'pending'}
           </span>

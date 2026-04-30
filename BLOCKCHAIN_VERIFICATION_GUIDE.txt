@@ -498,7 +498,7 @@ Look for txid in response:
     }
 
 You can view this transaction on Algorand Testnet Explorer:
-https://testnet.algoexplorer.io/tx/5V3MER7L2MHGK7D5R7Z4IAJ72K7T2...
+https://lora.algokit.io/testnet/transaction/5V3MER7L2MHGK7D5R7Z4IAJ72K7T2...
 
 
 7.2 VERIFY ON-CHAIN DATA (OPTIONAL)
@@ -507,7 +507,7 @@ https://testnet.algoexplorer.io/tx/5V3MER7L2MHGK7D5R7Z4IAJ72K7T2...
 The system stores query/response pairs in Algorand transaction notes.
 To verify manually:
 
-1. Go to https://testnet.algoexplorer.io
+1. Go to https://lora.algokit.io/testnet
 2. Search for the address: XXK264WAX6D5LOU5OUSNCO5MDEH6RKQNRENHGGHDS43Q2STN2DYFEFWDGY
 3. View recent transactions
 4. Check transaction notes for stored medical queries
