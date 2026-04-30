@@ -1,69 +1,472 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Responsible AI Chat</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>REAI — Responsible AI Medical Assistant</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1>Responsible Medical Assistant AI</h1>
-        <p>This AI provides general health information as a helpful assistant. <strong>Important:</strong> This is not a substitute for professional medical advice. Always consult a qualified healthcare provider for personal health concerns. All responses are logged on Algorand testnet for transparency.</p>
-        <div id="chat-log" class="chat-log">
-            <!-- Chat messages will appear here -->
-        </div>
-        <div class="input-area">
-            <input type="text" id="user-input" placeholder="Type your message here..." />
-            <button onclick="sendMessage()">Send</button>
-        </div>
+<!-- ── TOP NAV ── -->
+<nav class="topnav">
+  <div class="nav-brand">
+    <span class="brand-icon">⛓</span>
+    <span class="brand-name">REAI</span>
+    <span class="brand-sub">Blockchain-Integrated Medical AI</span>
+  </div>
+  <div class="nav-status">
+    <span class="dot" id="algo-dot"></span>
+    <span id="algo-status-text">Connecting to Algorand…</span>
+    <a id="algo-explorer-link" href="#" target="_blank" class="nav-link">View on Explorer ↗</a>
+  </div>
+</nav>
+
+<!-- ── MAIN LAYOUT ── -->
+<div class="layout">
+
+  <!-- LEFT SIDEBAR: Model + Chain Stats -->
+  <aside class="sidebar left-sidebar">
+    <div class="card">
+      <div class="card-title">🧠 Model State</div>
+      <div class="stat-row"><span>Name</span><span id="s-name">—</span></div>
+      <div class="stat-row"><span>Vocab Size</span><span id="s-vocab" class="highlight">—</span></div>
+      <div class="stat-row"><span>Training Steps</span><span id="s-steps" class="highlight">—</span></div>
+      <div class="stat-row"><span>Embedding Dim</span><span id="s-dim">—</span></div>
+      <div class="stat-row"><span>Model Hash</span><span id="s-hash" class="mono small">—</span></div>
+      <div class="stat-row"><span>Algo Records</span><span id="s-algo-rec" class="highlight">—</span></div>
     </div>
 
-    <script>
-        async function sendMessage() {
-            const userInput = document.getElementById('user-input');
-            const message = userInput.value.trim();
-            if (!message) return;
+    <div class="card">
+      <div class="card-title">⛓ Algorand Testnet</div>
+      <div class="stat-row"><span>Network</span><span id="a-network" class="green">—</span></div>
+      <div class="stat-row"><span>Last Round</span><span id="a-round" class="highlight">—</span></div>
+      <div class="stat-row"><span>Total Records</span><span id="a-total">—</span></div>
+      <div class="stat-row"><span>Pending</span><span id="a-pending">—</span></div>
+      <div class="stat-row"><span>Chain Valid</span><span id="a-valid" class="green">—</span></div>
+      <div class="stat-row"><span>Address</span>
+        <span id="a-addr" class="mono small truncate">—</span></div>
+    </div>
 
-            // Add user message to chat
-            addMessage('You', message);
-            userInput.value = '';
+    <div class="card">
+      <div class="card-title">📊 Record Types</div>
+      <div id="record-types-list"></div>
+    </div>
 
-            // Send to backend
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
-                });
-                const data = await response.json();
-                
-                if (data.error) {
-                    addMessage('AI', `Error: ${data.error}`);
-                } else {
-                    addMessage('AI', data.response);
-                    addMessage('Blockchain', `Response hash: ${data.hash}<br>Transaction ID: ${data.txid}<br><a href="https://testnet.algoexplorer.io/tx/${data.txid}" target="_blank">View on AlgoExplorer</a>`);
-                }
-            } catch (error) {
-                addMessage('AI', `Network error: ${error.message}`);
-            }
-        }
+    <div class="card">
+      <div class="card-title">🌐 P2P Validator Nodes</div>
+      <div id="nodes-list"></div>
+    </div>
+  </aside>
 
-        function addMessage(sender, text) {
-            const chatLog = document.getElementById('chat-log');
-            const messageDiv = document.createElement('div');
-            messageDiv.className = 'message';
-            messageDiv.innerHTML = `<strong>${sender}:</strong> ${text}`;
-            chatLog.appendChild(messageDiv);
-            chatLog.scrollTop = chatLog.scrollHeight;
-        }
+  <!-- CENTRE: Chat -->
+  <main class="chat-main">
+    <div class="chat-header">
+      <h2>Medical Advisory Chat</h2>
+      <p class="disclaimer">⚕️ For informational purposes only. Not a substitute for professional medical advice.</p>
+    </div>
 
-        // Allow sending message with Enter key
-        document.getElementById('user-input').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                sendMessage();
-            }
-        });
-    </script>
+    <div id="chat-log" class="chat-log"></div>
+
+    <div class="chat-input-row">
+      <input id="user-input" type="text"
+             placeholder="Describe your symptoms or ask a health question…" autocomplete="off"/>
+      <button id="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+  </main>
+
+  <!-- RIGHT SIDEBAR: Consensus + Audit -->
+  <aside class="sidebar right-sidebar">
+
+    <!-- Consensus Panel -->
+    <div class="card">
+      <div class="card-title">🔐 Consensus Training</div>
+      <div class="consensus-steps">
+        <div class="step" id="step1">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-label">Propose — Enter queries + the answer to teach</div>
+            <textarea id="propose-texts"
+              placeholder="Enter training queries (one per line)&#10;e.g.&#10;i have neck pain&#10;my neck hurts&#10;neck pain relief" rows="4"></textarea>
+            <input id="propose-response" type="text"
+              placeholder="Response the model should give (e.g. Take rest, apply ice)"/>
+            <button class="btn-sm" onclick="proposeTraining()">Propose to Algorand</button>
+            <div id="propose-result" class="result-box"></div>
+          </div>
+        </div>
+        <div class="step" id="step2">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-label">Approve — Cryptographic Signature Required</div>
+            <input id="approve-hash" type="text" placeholder="Proposal hash…"/>
+            <div class="validator-grid" id="validator-grid">
+              <div class="muted" style="font-size:11px">Loading validators…</div>
+            </div>
+            <div class="sig-note">
+              ✅ Each approval is signed with the validator's Ed25519 Algorand key.<br>
+              Signature is verified before the approval is counted.
+            </div>
+            <div id="approve-result" class="result-box"></div>
+          </div>
+        </div>
+        <div class="step" id="step3">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-label">Apply (Quorum Required) — writes to KB + Algorand</div>
+            <input id="apply-hash" type="text" placeholder="Proposal hash…"/>
+            <textarea id="apply-texts"
+              placeholder="Training queries (one per line)…" rows="2"></textarea>
+            <input id="apply-response" type="text"
+              placeholder="Response to store (auto-filled from Step 1)"/>
+            <label class="dp-toggle">
+              <input type="checkbox" id="dp-enabled"> Enable Differential Privacy
+            </label>
+            <button class="btn-sm btn-green" onclick="applyTraining()">Apply via Algorand</button>
+            <div id="apply-result" class="result-box"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proposals list -->
+    <div class="card">
+      <div class="card-title">📋 On-Chain Proposals
+        <button class="btn-xs" onclick="loadProposals()">↻ Refresh</button>
+      </div>
+      <div id="proposals-list" class="scroll-list"></div>
+    </div>
+
+    <!-- Audit trail -->
+    <div class="card">
+      <div class="card-title">🔍 Algorand Audit Trail
+        <button class="btn-xs" onclick="loadAudit()">↻ Refresh</button>
+      </div>
+      <div id="audit-list" class="scroll-list"></div>
+    </div>
+
+  </aside>
+</div>
+
+<!-- ── BOTTOM BAR: last TX ── -->
+<div class="bottom-bar" id="bottom-bar" style="display:none">
+  <span>Last Algorand TX:</span>
+  <span id="last-txid" class="mono"></span>
+  <a id="last-tx-link" href="#" target="_blank">View ↗</a>
+</div>
+
+<script>
+// ── Utilities ────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+function ts(iso) {
+  if (!iso) return '';
+  try { return new Date(iso).toLocaleTimeString(); } catch { return iso; }
+}
+
+function badge(type) {
+  const map = {
+    query_inference:      ['#3b82f6','QI'],
+    model_training_batch: ['#8b5cf6','TB'],
+    training_proposal:    ['#f59e0b','TP'],
+    validator_approval:   ['#10b981','VA'],
+    model_update_approved:['#22c55e','UA'],
+    security_threat:      ['#ef4444','ST'],
+    model_checkpoint:     ['#6366f1','CP'],
+    model_training_dp:    ['#a855f7','DP'],
+  };
+  const [color, label] = map[type] || ['#6b7280', type.slice(0,2).toUpperCase()];
+  return `<span class="badge" style="background:${color}">${label}</span>`;
+}
+
+// ── Stats polling ─────────────────────────────────────────────────────────────
+async function refreshStats() {
+  try {
+    const r = await fetch('/model-info');
+    const d = await r.json();
+    const m = d.model, b = d.blockchain;
+
+    $('s-name').textContent    = m.name || '—';
+    $('s-vocab').textContent   = m.vocab_size ?? '—';
+    $('s-steps').textContent   = m.training_steps ?? '—';
+    $('s-dim').textContent     = m.embedding_dim ?? '—';
+    $('s-hash').textContent    = m.model_hash || '—';
+    $('s-algo-rec').textContent= m.algo_records ?? '—';
+
+    $('a-network').textContent = b.network || '—';
+    $('a-round').textContent   = b.last_round ?? '—';
+    $('a-total').textContent   = b.total_records ?? '—';
+    $('a-pending').textContent = b.pending_records ?? '—';
+    $('a-addr').textContent    = (b.algo_address||'').slice(0,16)+'…';
+
+    // Record types
+    const rt = b.record_types || {};
+    $('record-types-list').innerHTML = Object.entries(rt)
+      .map(([k,v]) => `<div class="stat-row">${badge(k)}<span>${v}</span></div>`)
+      .join('') || '<div class="muted">No records yet</div>';
+
+    // Chain integrity
+    const ci = await fetch('/chain-integrity').then(r=>r.json());
+    $('a-valid').textContent = ci.is_valid ? '✅ Valid' : '❌ Invalid';
+    $('a-valid').className   = ci.is_valid ? 'green' : 'red';
+
+    // Algo dot
+    const online = (b.network||'').includes('live');
+    $('algo-dot').className      = 'dot ' + (online ? 'dot-green' : 'dot-red');
+    $('algo-status-text').textContent = online
+      ? `Algorand Testnet · Round ${b.last_round}` : 'Algorand Offline';
+    if (b.explorer_url)
+      $('algo-explorer-link').href = b.explorer_url;
+
+  } catch(e) {
+    $('algo-dot').className = 'dot dot-red';
+    $('algo-status-text').textContent = 'Connection error';
+  }
+}
+
+async function refreshNodes() {
+  try {
+    const d = await fetch('/decentralized/network-nodes').then(r=>r.json());
+    $('nodes-list').innerHTML = (d.nodes||[]).map(n => `
+      <div class="node-row">
+        <span class="dot ${n.status==='ONLINE'?'dot-green':'dot-yellow'}"></span>
+        <span class="node-id">${n.id}</span>
+        <span class="node-lat">${n.latency}</span>
+        <span class="node-role">${n.role}</span>
+      </div>`).join('');
+  } catch {}
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+async function sendMessage() {
+  const input = $('user-input');
+  const msg   = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  $('send-btn').disabled = true;
+
+  appendChat('user', msg);
+  const thinking = appendChat('ai', '<span class="thinking">Querying Algorand…</span>');
+
+  try {
+    const r = await fetch('/chat', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({message: msg})
+    });
+    const d = await r.json();
+
+    thinking.remove();
+
+    if (d.error) {
+      appendChat('ai', `❌ ${d.error}`);
+    } else {
+      appendChat('ai', d.response, {
+        source: d.source,
+        hash:   d.hash,
+        txid:   d.txid,
+        url:    d.algo_url
+      });
+      if (d.txid && d.txid !== 'pending' && !d.txid.startsWith('error')) {
+        $('bottom-bar').style.display = 'flex';
+        $('last-txid').textContent    = d.txid.slice(0,20)+'…';
+        $('last-tx-link').href        = d.algo_url || '#';
+      }
+      if (d.model_info) updateModelQuick(d.model_info);
+    }
+  } catch(e) {
+    thinking.remove();
+    appendChat('ai', `Network error: ${e.message}`);
+  }
+  $('send-btn').disabled = false;
+  refreshStats();
+}
+
+function appendChat(role, html, meta) {
+  const log = $('chat-log');
+  const div = document.createElement('div');
+  div.className = `msg msg-${role}`;
+
+  let inner = `<div class="msg-bubble">${html}</div>`;
+  if (meta) {
+    inner += `<div class="msg-meta">
+      <span class="meta-source">📡 ${meta.source}</span>
+      <span class="meta-hash mono">🔑 ${(meta.hash||'').slice(0,16)}…</span>
+      ${meta.txid && meta.txid!=='pending' && !meta.txid.startsWith('error')
+        ? `<a href="${meta.url}" target="_blank" class="meta-tx">⛓ Algorand TX ↗</a>`
+        : `<span class="meta-tx muted">⛓ ${meta.txid||'pending'}</span>`}
+    </div>`;
+  }
+  div.innerHTML = inner;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+  return div;
+}
+
+function updateModelQuick(m) {
+  $('s-vocab').textContent  = m.vocab_size ?? '—';
+  $('s-steps').textContent  = m.training_steps ?? '—';
+  $('s-hash').textContent   = m.model_hash || '—';
+}
+
+// ── Consensus ─────────────────────────────────────────────────────────────────
+async function proposeTraining() {
+  const texts    = $('propose-texts').value.trim().split('\n').filter(Boolean);
+  const response = $('propose-response').value.trim();
+  if (!texts.length) return;
+  if (!response) {
+    $('propose-result').innerHTML = '❌ Enter a response text first';
+    return;
+  }
+  $('propose-result').innerHTML = '<span class="thinking">Sending to Algorand…</span>';
+  try {
+    const d = await fetch('/decentralized/propose-training', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({texts})
+    }).then(r=>r.json());
+    const ph = d.proposal?.proposal_hash || '—';
+    $('propose-result').innerHTML =
+      `✅ Proposed<br><span class="mono">${ph}</span>`;
+    // Auto-fill steps 2 and 3
+    $('approve-hash').value  = ph;
+    $('apply-hash').value    = ph;
+    $('apply-texts').value   = $('propose-texts').value;
+    $('apply-response').value = response;
+    loadProposals();
+  } catch(e) {
+    $('propose-result').innerHTML = `❌ ${e.message}`;
+  }
+}
+
+async function approveWithValidator(validatorName) {
+  const ph = $('approve-hash').value.trim();
+  if (!ph) {
+    $('approve-result').innerHTML = '❌ Enter a proposal hash first';
+    return;
+  }
+  $('approve-result').innerHTML = `<span class="thinking">Signing with ${validatorName}…</span>`;
+  try {
+    const d = await fetch('/decentralized/approve-proposal', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({proposal_hash: ph, validator_name: validatorName})
+    }).then(r=>r.json());
+    if (d.error) {
+      $('approve-result').innerHTML = `❌ ${d.error}`;
+    } else {
+      $('approve-result').innerHTML =
+        `✅ Approved by <b>${validatorName}</b><br>
+         Address: <span class="mono small">${d.validator_address?.slice(0,16)}…</span><br>
+         Signature verified ✓`;
+      loadProposals();
+    }
+  } catch(e) {
+    $('approve-result').innerHTML = `❌ ${e.message}`;
+  }
+}
+
+async function loadValidators() {
+  try {
+    const vals = await fetch('/validators').then(r=>r.json());
+    const grid = $('validator-grid');
+    grid.innerHTML = Object.entries(vals).map(([name, v]) => `
+      <button class="validator-btn" onclick="approveWithValidator('${name}')">
+        <span class="val-name">${name}</span>
+        <span class="val-addr mono">${v.address.slice(0,12)}…</span>
+      </button>
+    `).join('');
+  } catch {
+    $('validator-grid').innerHTML = '<div class="muted">No validators loaded</div>';
+  }
+}
+
+async function applyTraining() {
+  const ph           = $('apply-hash').value.trim();
+  const texts        = $('apply-texts').value.trim().split('\n').filter(Boolean);
+  const response_text = $('apply-response').value.trim();
+  const dp           = $('dp-enabled').checked;
+  if (!ph || !texts.length) return;
+  if (!response_text) {
+    $('apply-result').innerHTML = '❌ Enter the response text to store in the knowledge base';
+    return;
+  }
+  $('apply-result').innerHTML = '<span class="thinking">Verifying quorum on Algorand…</span>';
+  try {
+    const body = {proposal_hash: ph, texts, response_text};
+    if (dp) body.dp_params = {clipping_norm: 1.0, noise_scale: 0.01};
+    const d = await fetch('/decentralized/apply-training', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    }).then(r=>r.json());
+    if (d.error) {
+      $('apply-result').innerHTML = `❌ ${d.error}`;
+    } else {
+      const m = d.metrics || {};
+      $('apply-result').innerHTML =
+        `✅ Applied${dp?' (DP)':''}!<br>
+         KB entries added: <b>${m.kb_entries_added ?? texts.length}</b><br>
+         Vocab: ${m.vocab_before}→${m.vocab_after}<br>
+         Model hash: <span class="mono">${m.model_hash_after||'—'}</span><br>
+         <span class="green">Now type the query in chat to test it ↓</span>`;
+      refreshStats();
+      loadProposals();
+    }
+  } catch(e) {
+    $('apply-result').innerHTML = `❌ ${e.message}`;
+  }
+}
+
+// ── Proposals ─────────────────────────────────────────────────────────────────
+async function loadProposals() {
+  try {
+    const list = await fetch('/decentralized/all-proposals').then(r=>r.json());
+    $('proposals-list').innerHTML = list.length
+      ? list.map(p => `
+        <div class="proposal-item">
+          <div class="prop-hash mono">${p.hash}</div>
+          <div class="prop-meta">
+            <span class="badge ${p.status==='Applied'?'badge-green':'badge-yellow'}">${p.status}</span>
+            <span>${p.approvals?.length||0} approvals</span>
+            <span>${p.texts_count||0} texts</span>
+          </div>
+        </div>`).join('')
+      : '<div class="muted">No proposals yet</div>';
+  } catch {}
+}
+
+// ── Audit trail ───────────────────────────────────────────────────────────────
+async function loadAudit() {
+  try {
+    const d = await fetch('/algo-audit').then(r=>r.json());
+    const records = d.records || [];
+    $('audit-list').innerHTML = records.length
+      ? records.slice(0,40).map(r => `
+        <div class="audit-item">
+          ${badge(r.type)}
+          <span class="audit-ts">${ts(r.timestamp)}</span>
+          <span class="audit-txid mono">
+            ${r.txid && r.txid!=='pending...'
+              ? `<a href="https://testnet.algoexplorer.io/tx/${r.txid}"
+                    target="_blank">${r.txid.slice(0,10)}…↗</a>`
+              : 'pending'}
+          </span>
+        </div>`).join('')
+      : '<div class="muted">No records yet</div>';
+  } catch {}
+}
+
+// ── Keyboard ──────────────────────────────────────────────────────────────────
+$('user-input').addEventListener('keypress', e => {
+  if (e.key === 'Enter') sendMessage();
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+refreshStats();
+refreshNodes();
+loadProposals();
+loadAudit();
+loadValidators();
+setInterval(refreshStats,  15000);
+setInterval(refreshNodes,  10000);
+setInterval(loadAudit,     20000);
+setInterval(loadProposals, 30000);
+</script>
 </body>
 </html>

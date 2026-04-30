@@ -1,0 +1,14 @@
+{
+  "validator-alpha": {
+    "address": "R77BNVPGNS4YCU2MOJ3WO5FMLTG7WM4ZQLASVTI3XX4UC3UQ2PZE2GSG4I",
+    "private_key": "KlbQ067jDqETufzThfVkZFD3ci58X9I5mFBLpPHZ6MmP/hbV5my5gVNMcndndKxczfszmYLBKs0bvflBbpDT8g=="
+  },
+  "validator-beta": {
+    "address": "EEV33PH7RO5G5IBEGEU4J5ES5POA7YL4ALZE6BWDWSKOAIGDOQSM3BXDYM",
+    "private_key": "t7bntwVSjU+4FpA69Wk5afAYQR9Om5EHZBep+IIRpk8hK728/4u6bqAkMSnE9JLr3A/hfALyTwbDtJTgIMN0JA=="
+  },
+  "validator-gamma": {
+    "address": "2OSC5DA4MG7VDS57TFXDW2RZBQEH4HQHKNOVIHATNN7VEROXLTLJYQDGA4",
+    "private_key": "g+xj4NltKVbimSX5IO7zWV66o8N/VQfGukhuepEtcDPTpC6MHGG/Ucu/mW47ajkMCH4eB1NdVBwTa39SRddc1g=="
+  }
+}
